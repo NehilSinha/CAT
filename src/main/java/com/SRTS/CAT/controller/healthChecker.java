@@ -8,8 +8,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 @RestController
 public class healthChecker {
     @GetMapping("/h")
-    public String health() {
-        return "Hello World!";
+    public boolean health() {
+        return true;
     }
     
 
