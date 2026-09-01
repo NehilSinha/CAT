@@ -3,20 +3,19 @@ package com.SRTS.CAT.entity;
 import lombok.Data;
 import org.bson.types.ObjectId;
 import org.springframework.data.annotation.Id;
-
-import java.util.List;
+import org.springframework.data.mongodb.core.mapping.Document;
 
 @Data
+@Document(collection = "equipment")
 public class EquipmentEntry {
 
  @Id
- private Object id;
-
+ private String id;
 
  private String equipmentCode;
  private String equipmentName;
- private String type;
- private String status;
+ private EquipmentType type;
+ private EquipmentStatus status;
  private boolean activeState;
  private ObjectId siteId;
  private String currentLocation;
