@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 public class healthChecker {
     @GetMapping("/h")
     public boolean health() {
-        return true;
+        return false;
     }
     
 
