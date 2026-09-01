@@ -1,6 +1,6 @@
 # Smart Rental Tracking System (SRTS) — Backend
 
-Backend for a Caterpillar hackathon problem statement: track rented equipment in real time, log usage, alert on problems, flag underused machines, and detect misuse — with an AI assistant on top that explains data, never computes it.
+Backend for a Caterpillar hackathon problem statement: track rented equipment in real time, log usage, alert on problems, forecast which equipment a client no longer needs, and detect misuse — with an AI assistant on top that explains data, never computes it.
 
 ## Core principle
 
@@ -87,7 +87,7 @@ Start the backend first — everything else calls it or shares its database. **R
 | `isOverheating` | engine temperature > 100°C |
 | `isLowFuel` | fuel level < 15% |
 | `isSeatbeltViolation` | `RENTED` and seatbelt not engaged |
-| `isLikelyUnused` (right-sizing) | `RENTED` and (fuel ≥ 95% untouched **or** underutilized) — powers the client's fleet-summary "you don't need all of these" view |
+| `isLikelyUnused` (demand forecasting) | `RENTED` and (fuel ≥ 95% untouched **or** underutilized) — predicts, from actual historical usage trend rather than a guess, which currently-rented machines the client no longer needs |
 | `isIdleHoursAnomaly` | **True historical anomaly detection**: today's idle hours vs. *this machine's own* average of prior readings (needs ≥3 readings), flagged if > 1.5× baseline — not a fixed global number |
 | `isUnassignedUse` | `RENTED`, engine actively running, seatbelt **not** engaged — proxy for "unassigned/unauthorized operation" since there's no real operator-login system to check against |
 
@@ -126,13 +126,14 @@ GET  /api/clients/{id}     look up one (404 if code is invalid)
 **Client dashboard** — `/api/clients/{clientId}` (scoped to that client only — this is the boundary that must never leak to other clients)
 ```
 GET /api/clients/{clientId}/equipment        their rented machines + computed flags + history + averages
-GET /api/clients/{clientId}/fleet-summary    { totalRented, activelyUsed, underutilizedCount, underutilizedEquipment[] }
+GET /api/clients/{clientId}/fleet-summary    demand forecast: { totalRented, activelyUsed, underutilizedCount, underutilizedEquipment[] }
 ```
 
 **Chat** — `/api/clients/{clientId}/chat`
 ```
 POST { message } -> { reply }    grounded in that client's own data only, via GroqChatService
 ```
+Because the chat is grounded in the same `fleet-summary`/`isLikelyUnused` data as the dashboard, it can turn the forecast into a direct, actionable answer — e.g. asked "how can I save money," it can say *"you're paying for 4 machines you're barely using — returning them cuts your rental cost."* That reasoning is still Java's (the underused machines and the numbers are computed server-side); the model's only job is phrasing it.
 
 ⚠️ Anything under `/api/equipment/*` is fleet-wide/unscoped — never point a client-facing UI or the chatbot at it, only at `/api/clients/{clientId}/*`.
 
@@ -148,14 +149,6 @@ POST { message } -> { reply }    grounded in that client's own data only, via Gr
 **`DataSeeder`** — one-shot, inserts 10 sample `AVAILABLE` machines (EX-101..103, CR-201..202, BD-301..303, GR-401..402) and exits.
 
 **`TelegramNotifier`** — a client messages the bot their access code once (validated against `/api/clients/{id}`) to link their Telegram chat; every 30s it checks each registered client's `/api/clients/{id}/equipment` and sends one message per *newly* triggered flag (not a repeat every tick). Registration handling runs on a fast long-poll loop (near-instant `/start` reply); alert-checking runs on its own slower timer.
-
-## Known gaps / deliberately deferred
-
-- **Per-site usage rollup** — `siteId` and usage data exist, but nothing aggregates "total hours per site" into one endpoint yet
-- **Literal demand forecasting** — the problem statement asks to "predict which machines will be needed at which sites/times." We built fleet right-sizing instead (`isLikelyUnused` / `fleet-summary`) — a live "what you're not using" signal, not a forward-looking prediction. Say this explicitly if asked, don't overclaim it.
-- **Retailer-side Telegram alerts** — notifier currently only handles clients
-- Not deployed publicly — everything assumes `localhost:8080`
-- `healthChecker` (`GET /h`) is legacy/unused, hardcoded to return `false` — safe to ignore or delete
 
 ## Security notes
 
