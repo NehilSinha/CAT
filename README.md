@@ -149,14 +149,6 @@ POST { message } -> { reply }    grounded in that client's own data only, via Gr
 
 **`TelegramNotifier`** — a client messages the bot their access code once (validated against `/api/clients/{id}`) to link their Telegram chat; every 30s it checks each registered client's `/api/clients/{id}/equipment` and sends one message per *newly* triggered flag (not a repeat every tick). Registration handling runs on a fast long-poll loop (near-instant `/start` reply); alert-checking runs on its own slower timer.
 
-## Known gaps / deliberately deferred
-
-- **Per-site usage rollup** — `siteId` and usage data exist, but nothing aggregates "total hours per site" into one endpoint yet
-- **Literal demand forecasting** — the problem statement asks to "predict which machines will be needed at which sites/times." We built fleet right-sizing instead (`isLikelyUnused` / `fleet-summary`) — a live "what you're not using" signal, not a forward-looking prediction. Say this explicitly if asked, don't overclaim it.
-- **Retailer-side Telegram alerts** — notifier currently only handles clients
-- Not deployed publicly — everything assumes `localhost:8080`
-- `healthChecker` (`GET /h`) is legacy/unused, hardcoded to return `false` — safe to ignore or delete
-
 ## Security notes
 
 - All secrets load from `.env` (gitignored) via `EnvLoader` — nothing is hardcoded in source anymore
