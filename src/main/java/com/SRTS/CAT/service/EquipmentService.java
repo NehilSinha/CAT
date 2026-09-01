@@ -36,6 +36,9 @@ public class EquipmentService {
 
     public EquipmentEntry checkOut(String id, ObjectId siteId, ObjectId operatorId, String location) {
         EquipmentEntry equipment = getById(id);
+        if (equipment.getStatus() == EquipmentStatus.RENTED) {
+            throw new IllegalArgumentException("Equipment is already rented: " + id);
+        }
         equipment.setStatus(EquipmentStatus.RENTED);
         equipment.setActiveState(true);
         equipment.setSiteId(siteId);
@@ -46,6 +49,9 @@ public class EquipmentService {
 
     public EquipmentEntry checkIn(String id) {
         EquipmentEntry equipment = getById(id);
+        if (equipment.getStatus() != EquipmentStatus.RENTED) {
+            throw new IllegalArgumentException("Equipment is not currently rented: " + id);
+        }
         equipment.setStatus(EquipmentStatus.AVAILABLE);
         equipment.setActiveState(false);
         return equipmentRepo.save(equipment);
