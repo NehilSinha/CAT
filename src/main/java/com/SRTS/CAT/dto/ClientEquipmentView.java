@@ -16,6 +16,7 @@ public class ClientEquipmentView {
     private EquipmentType type;
     private EquipmentStatus status;
     private String currentLocation;
+    private String lastOperatorId;
     private Integer engineHoursPerDay;
     private Integer idleHoursPerDay;
     private Integer operatingDays;

@@ -69,13 +69,15 @@ Start the backend first — everything else calls it or shares its database. **R
 | Field | Meaning |
 |---|---|
 | `equipmentCode`, `equipmentName`, `type`, `status` | Identity. `type`: EXCAVATOR / CRANE / BULLDOZER / GRADER / DUMP_TRUCK / WHEEL_LOADER / COMPACTOR / FORKLIFT. `status`: AVAILABLE / RENTED / MAINTENANCE (IDLE, OVERDUE exist on the enum but aren't used as real transitions) |
-| `siteId`, `currentLocation`, `lastOperatorId`, `clientId` | Where it is, who's driving, who rented it (`clientId` is `null` unless `RENTED`) |
+| `siteId`, `currentLocation`, `lastOperatorId`, `clientId` | Where it is, which operator (by `Operator.id`) is assigned, who rented it (`clientId` is `null` unless `RENTED`) |
 | `checkOutDate`, `checkInDate`, `expectedReturnDate` | Rental dates |
 | `engineHoursPerDay`, `idleHoursPerDay`, `operatingDays` | Usage counters |
 | `engineTemperature`, `fuelLevel`, `seatbeltEngaged`, `activeState` | Live sensor telemetry |
 | `engineHoursHistory`, `idleHoursHistory`, `fuelLevelHistory` | One entry appended per recorded reading (index 0 = first reading) — feeds averages and the anomaly rule |
 
 **`Client`** (collection `clients`): `id` is a randomly generated 8-character code (excludes `O`/`0`/`I`/`1`) — that code **is** the client's login, no password. `companyName`, `createdDate`.
+
+**`Operator`** (collection `operators`): `id`, `name`, `clientId`. A client creates their own operators and assigns them to any of their currently-rented machines from the dashboard table — pure assignment (who's driving which machine), no login or credentials of their own. Intentionally minimal, no separate operator management beyond add + assign.
 
 ## The calculation rules (all in `EquipmentCalculationService`)
 
@@ -105,6 +107,7 @@ PATCH  /api/equipment/checkout-batch        { equipmentIds[], clientId, location
 PATCH  /api/equipment/{id}/checkin          resets location to "CAT Yard", stamps checkInDate
 PATCH  /api/equipment/{id}/maintenance/start  only from AVAILABLE — resets sensors to a clean baseline (clears stale alert flags)
 PATCH  /api/equipment/{id}/maintenance/end    only from MAINTENANCE -> AVAILABLE
+PATCH  /api/equipment/{id}/assign-operator  { operatorId } — only valid while RENTED; sets lastOperatorId
 PATCH  /api/equipment/{id}/usage            { engineHoursPerDay?, idleHoursPerDay?, operatingDays? }
 PATCH  /api/equipment/{id}/telemetry        { engineTemperature?, fuelLevel?, seatbeltEngaged? }
 GET    /api/equipment/{id}/history          one machine's history + averages
@@ -128,6 +131,13 @@ GET  /api/clients/{id}     look up one (404 if code is invalid)
 GET /api/clients/{clientId}/equipment        their rented machines + computed flags + history + averages
 GET /api/clients/{clientId}/fleet-summary    demand forecast: { totalRented, activelyUsed, underutilizedCount, underutilizedEquipment[] }
 ```
+
+**Operators** — `/api/clients/{clientId}/operators` (scoped to that client)
+```
+POST /api/clients/{clientId}/operators    { name } -> creates an operator for this client
+GET  /api/clients/{clientId}/operators    list this client's operators
+```
+Assigning one to a machine is a separate call against the unscoped equipment resource: `PATCH /api/equipment/{id}/assign-operator` (see above).
 
 **Chat** — `/api/clients/{clientId}/chat`
 ```

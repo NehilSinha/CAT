@@ -47,6 +47,7 @@ public class ClientDashboardService {
                 equipment.getType(),
                 equipment.getStatus(),
                 equipment.getCurrentLocation(),
+                equipment.getLastOperatorId(),
                 equipment.getEngineHoursPerDay(),
                 equipment.getIdleHoursPerDay(),
                 equipment.getOperatingDays(),

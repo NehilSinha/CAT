@@ -43,7 +43,7 @@ public class EquipmentService {
                 .orElseThrow(() -> new NoSuchElementException("Equipment not found: " + id));
     }
 
-    public EquipmentEntry checkOut(String id, ObjectId siteId, ObjectId operatorId, String location, LocalDate expectedReturnDate, String clientId) {
+    public EquipmentEntry checkOut(String id, ObjectId siteId, String operatorId, String location, LocalDate expectedReturnDate, String clientId) {
         EquipmentEntry equipment = getById(id);
         if (equipment.getStatus() == EquipmentStatus.RENTED) {
             throw new IllegalArgumentException("Equipment is already rented: " + id);
@@ -68,7 +68,7 @@ public class EquipmentService {
         return equipmentRepo.save(equipment);
     }
 
-    public BatchCheckoutResult checkOutBatch(List<String> equipmentIds, ObjectId siteId, ObjectId operatorId, String location, LocalDate expectedReturnDate, String clientId) {
+    public BatchCheckoutResult checkOutBatch(List<String> equipmentIds, ObjectId siteId, String operatorId, String location, LocalDate expectedReturnDate, String clientId) {
         List<EquipmentEntry> checkedOut = new ArrayList<>();
         Map<String, String> failed = new LinkedHashMap<>();
         for (String equipmentId : equipmentIds) {
@@ -121,6 +121,15 @@ public class EquipmentService {
             throw new IllegalArgumentException("Equipment is not currently in maintenance: " + id);
         }
         equipment.setStatus(EquipmentStatus.AVAILABLE);
+        return equipmentRepo.save(equipment);
+    }
+
+    public EquipmentEntry assignOperator(String id, String operatorId) {
+        EquipmentEntry equipment = getById(id);
+        if (equipment.getStatus() != EquipmentStatus.RENTED) {
+            throw new IllegalArgumentException("Equipment must be rented to assign an operator: " + id);
+        }
+        equipment.setLastOperatorId(operatorId);
         return equipmentRepo.save(equipment);
     }
 

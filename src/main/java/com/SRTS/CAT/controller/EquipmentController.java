@@ -45,7 +45,7 @@ public class EquipmentController {
     @PatchMapping("/{id}/checkout")
     public EquipmentEntry checkOut(@PathVariable String id, @RequestBody Map<String, String> body) {
         ObjectId siteId = body.get("siteId") != null ? new ObjectId(body.get("siteId")) : null;
-        ObjectId operatorId = body.get("operatorId") != null ? new ObjectId(body.get("operatorId")) : null;
+        String operatorId = body.get("operatorId");
         String location = body.get("location");
         LocalDate expectedReturnDate = body.get("expectedReturnDate") != null
                 ? LocalDate.parse(body.get("expectedReturnDate"))
@@ -57,7 +57,7 @@ public class EquipmentController {
     @PatchMapping("/checkout-batch")
     public BatchCheckoutResult checkOutBatch(@RequestBody BatchCheckoutRequest request) {
         ObjectId siteId = request.getSiteId() != null ? new ObjectId(request.getSiteId()) : null;
-        ObjectId operatorId = request.getOperatorId() != null ? new ObjectId(request.getOperatorId()) : null;
+        String operatorId = request.getOperatorId();
         LocalDate expectedReturnDate = request.getExpectedReturnDate() != null
                 ? LocalDate.parse(request.getExpectedReturnDate())
                 : null;
@@ -84,6 +84,11 @@ public class EquipmentController {
     @PatchMapping("/{id}/maintenance/end")
     public EquipmentEntry endMaintenance(@PathVariable String id) {
         return equipmentService.endMaintenance(id);
+    }
+
+    @PatchMapping("/{id}/assign-operator")
+    public EquipmentEntry assignOperator(@PathVariable String id, @RequestBody Map<String, String> body) {
+        return equipmentService.assignOperator(id, body.get("operatorId"));
     }
 
     @PatchMapping("/{id}/usage")

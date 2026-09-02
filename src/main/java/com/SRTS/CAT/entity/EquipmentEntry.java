@@ -26,7 +26,7 @@ public class EquipmentEntry {
  private Integer engineHoursPerDay;
  private Integer idleHoursPerDay;
  private Integer operatingDays;
- private ObjectId lastOperatorId;
+ private String lastOperatorId;
  private LocalDate checkOutDate;
  private LocalDate checkInDate;
  private LocalDate expectedReturnDate;
