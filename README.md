@@ -68,7 +68,7 @@ Start the backend first — everything else calls it or shares its database. **R
 
 | Field | Meaning |
 |---|---|
-| `equipmentCode`, `equipmentName`, `type`, `status` | Identity. `type`: EXCAVATOR / CRANE / BULLDOZER / GRADER. `status`: AVAILABLE / RENTED / MAINTENANCE (IDLE, OVERDUE exist on the enum but aren't used as real transitions) |
+| `equipmentCode`, `equipmentName`, `type`, `status` | Identity. `type`: EXCAVATOR / CRANE / BULLDOZER / GRADER / DUMP_TRUCK / WHEEL_LOADER / COMPACTOR / FORKLIFT. `status`: AVAILABLE / RENTED / MAINTENANCE (IDLE, OVERDUE exist on the enum but aren't used as real transitions) |
 | `siteId`, `currentLocation`, `lastOperatorId`, `clientId` | Where it is, who's driving, who rented it (`clientId` is `null` unless `RENTED`) |
 | `checkOutDate`, `checkInDate`, `expectedReturnDate` | Rental dates |
 | `engineHoursPerDay`, `idleHoursPerDay`, `operatingDays` | Usage counters |
@@ -144,9 +144,10 @@ Because the chat is grounded in the same `fleet-summary`/`isLikelyUnused` data a
 - Temperature rises while active, cools while idle
 - Fuel burns faster while active than idle
 - Seatbelt: ~90% engaged per tick
+- `operatingDays` increments by 1 every tick regardless of active/idle (one simulated day passing) — this reaches the AI chat context too, so it can answer questions like "how many operating days does this machine have"
 - Pushes into the `*History` arrays every tick
 
-**`DataSeeder`** — one-shot, inserts 10 sample `AVAILABLE` machines (EX-101..103, CR-201..202, BD-301..303, GR-401..402) and exits.
+**`DataSeeder`** — one-shot, inserts sample `AVAILABLE` machines and exits. Generates them programmatically: `MACHINES_PER_TYPE` (default 7) × all 8 types in `EquipmentType` = 56 machines, each type keeping its own numeric code block (Excavators 101-107, Cranes 201-207, ... Forklifts 801-807), spread across 3 yard sites. Adjust `MACHINES_PER_TYPE` or the `TYPES` array to change the count or add categories.
 
 **`TelegramNotifier`** — a client messages the bot their access code once (validated against `/api/clients/{id}`) to link their Telegram chat; every 30s it checks each registered client's `/api/clients/{id}/equipment` and sends one message per *newly* triggered flag (not a repeat every tick). Registration handling runs on a fast long-poll loop (near-instant `/start` reply); alert-checking runs on its own slower timer.
 

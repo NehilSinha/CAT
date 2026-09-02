@@ -3,9 +3,10 @@ package com.SRTS.CAT.seed;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoCollection;
+import com.SRTS.CAT.util.EnvLoader;
 import org.bson.Document;
 
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -15,14 +16,29 @@ import java.util.List;
  * Run it once from an IDE "Run" on main(), or:
  *   java -cp target/classes;<mongodb-driver-sync + bson jars> com.SRTS.CAT.seed.DataSeeder
  *
- * Pass the MongoDB URI as the first argument, or set the MONGODB_URI
- * environment variable - no default is baked in, so no credentials ever
- * live in source.
+ * Pass the MongoDB URI as the first argument, or set MONGODB_URI in the
+ * environment / a ".env" file in the project root - no default is baked
+ * in, so no credentials ever live in source.
  */
 public class DataSeeder {
 
+    // { EquipmentType enum name, code prefix, display name, starting number block }
+    private static final String[][] TYPES = {
+            {"EXCAVATOR", "EX", "Excavator", "101"},
+            {"CRANE", "CR", "Crane", "201"},
+            {"BULLDOZER", "BD", "Bulldozer", "301"},
+            {"GRADER", "GR", "Grader", "401"},
+            {"DUMP_TRUCK", "DT", "Dump Truck", "501"},
+            {"WHEEL_LOADER", "WL", "Wheel Loader", "601"},
+            {"COMPACTOR", "CP", "Compactor", "701"},
+            {"FORKLIFT", "FL", "Forklift", "801"},
+    };
+
+    private static final String[] LOCATIONS = {"CAT Yard - Site A", "CAT Yard - Site B", "CAT Yard - Site C"};
+    private static final int MACHINES_PER_TYPE = 7;
+
     public static void main(String[] args) {
-        String uri = args.length > 0 ? args[0] : System.getenv("MONGODB_URI");
+        String uri = args.length > 0 ? args[0] : EnvLoader.get("MONGODB_URI");
         if (uri == null || uri.isBlank()) {
             System.err.println("Provide a MongoDB URI as the first argument, or set the MONGODB_URI environment variable.");
             System.exit(1);
@@ -32,22 +48,33 @@ public class DataSeeder {
         try (MongoClient client = MongoClients.create(uri)) {
             MongoCollection<Document> equipment = client.getDatabase(databaseName).getCollection("equipment");
 
-            List<Document> seedData = Arrays.asList(
-                    equipmentDoc("EX-101", "Excavator 101", "EXCAVATOR", "CAT Yard - Site A"),
-                    equipmentDoc("EX-102", "Excavator 102", "EXCAVATOR", "CAT Yard - Site A"),
-                    equipmentDoc("EX-103", "Excavator 103", "EXCAVATOR", "CAT Yard - Site B"),
-                    equipmentDoc("CR-201", "Crane 201", "CRANE", "CAT Yard - Site A"),
-                    equipmentDoc("CR-202", "Crane 202", "CRANE", "CAT Yard - Site B"),
-                    equipmentDoc("BD-301", "Bulldozer 301", "BULLDOZER", "CAT Yard - Site A"),
-                    equipmentDoc("BD-302", "Bulldozer 302", "BULLDOZER", "CAT Yard - Site B"),
-                    equipmentDoc("BD-303", "Bulldozer 303", "BULLDOZER", "CAT Yard - Site B"),
-                    equipmentDoc("GR-401", "Grader 401", "GRADER", "CAT Yard - Site A"),
-                    equipmentDoc("GR-402", "Grader 402", "GRADER", "CAT Yard - Site B")
-            );
-
+            List<Document> seedData = buildSeedData();
             equipment.insertMany(seedData);
             System.out.printf("Inserted %d AVAILABLE equipment records into '%s'.%n", seedData.size(), databaseName);
         }
+    }
+
+    private static List<Document> buildSeedData() {
+        List<Document> seedData = new ArrayList<>();
+        int locationIndex = 0;
+
+        for (String[] typeInfo : TYPES) {
+            String type = typeInfo[0];
+            String prefix = typeInfo[1];
+            String displayName = typeInfo[2];
+            int startNumber = Integer.parseInt(typeInfo[3]);
+
+            for (int i = 0; i < MACHINES_PER_TYPE; i++) {
+                int number = startNumber + i;
+                String code = prefix + "-" + number;
+                String name = displayName + " " + number;
+                String location = LOCATIONS[locationIndex % LOCATIONS.length];
+                locationIndex++;
+                seedData.add(equipmentDoc(code, name, type, location));
+            }
+        }
+
+        return seedData;
     }
 
     private static Document equipmentDoc(String code, String name, String type, String location) {

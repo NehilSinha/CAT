@@ -6,6 +6,7 @@ import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.UpdateOptions;
 import com.mongodb.client.model.Updates;
+import com.SRTS.CAT.util.EnvLoader;
 import org.bson.Document;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
@@ -50,12 +51,12 @@ import java.util.Set;
  *
  * Usage:
  *   java -cp target/classes;<mongodb-driver-sync + bson jars> \
- *        com.SRTS.CAT.notifier.TelegramNotifier "<telegram-bot-token>" [apiBaseUrl] [mongoUri] [intervalSeconds]
+ *        com.SRTS.CAT.notifier.TelegramNotifier [telegram-bot-token] [apiBaseUrl] [mongoUri] [intervalSeconds]
  *
  * Defaults: apiBaseUrl=http://localhost:8080/api, intervalSeconds=30.
- * mongoUri has no default - pass it as the third argument or set the
- * MONGODB_URI environment variable; no credentials are baked into source.
- * Stops on Ctrl+C.
+ * The bot token and mongoUri have no defaults baked in - pass them as
+ * arguments, or set TELEGRAM_BOT_TOKEN / MONGODB_URI in the environment
+ * or a ".env" file in the project root. Stops on Ctrl+C.
  */
 public class TelegramNotifier {
 
@@ -77,15 +78,15 @@ public class TelegramNotifier {
     private static final Map<String, Set<String>> activeFlagsByClient = new HashMap<>();
 
     public static void main(String[] args) {
-        if (args.length < 1) {
-            System.err.println("Usage: TelegramNotifier <telegram-bot-token> [apiBaseUrl] [mongoUri] [intervalSeconds]");
+        botToken = args.length > 0 ? args[0] : EnvLoader.get("TELEGRAM_BOT_TOKEN");
+        if (botToken == null || botToken.isBlank()) {
+            System.err.println("Provide a Telegram bot token as the first argument, or set TELEGRAM_BOT_TOKEN.");
             System.exit(1);
         }
-        botToken = args[0];
         apiBase = args.length > 1 ? args[1] : "http://localhost:8080/api";
-        String mongoUri = args.length > 2 ? args[2] : System.getenv("MONGODB_URI");
+        String mongoUri = args.length > 2 ? args[2] : EnvLoader.get("MONGODB_URI");
         if (mongoUri == null || mongoUri.isBlank()) {
-            System.err.println("Provide a MongoDB URI as the third argument, or set the MONGODB_URI environment variable.");
+            System.err.println("Provide a MongoDB URI as the third argument, or set MONGODB_URI.");
             System.exit(1);
         }
         long intervalSeconds = args.length > 3 ? Long.parseLong(args[3]) : 30;

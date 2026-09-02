@@ -58,6 +58,7 @@ public class ClientChatController {
                     .append(", location=").append(e.getCurrentLocation())
                     .append(", checkedOut=").append(e.getCheckOutDate())
                     .append(", expectedReturn=").append(e.getExpectedReturnDate())
+                    .append(", operatingDays=").append(e.getOperatingDays())
                     .append(", currentUtilization=").append(Math.round(e.getUtilization() * 100)).append("%")
                     .append(", fuelLevel=").append(e.getFuelLevel())
                     .append(", avgFuelLevelSinceCheckout=").append(Math.round(e.getAverageFuelLevel()))

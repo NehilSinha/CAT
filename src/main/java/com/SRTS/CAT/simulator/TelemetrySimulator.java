@@ -7,6 +7,7 @@ import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Updates;
+import com.SRTS.CAT.util.EnvLoader;
 import org.bson.Document;
 import org.bson.types.ObjectId;
 
@@ -23,9 +24,9 @@ import java.util.concurrent.ThreadLocalRandom;
  *   java -cp target/classes;<mongodb-driver-sync + bson jars from your local .m2> \
  *        com.SRTS.CAT.simulator.TelemetrySimulator "<mongodb-uri>" [databaseName] [intervalSeconds]
  *
- * Pass the MongoDB URI as the first argument, or set the MONGODB_URI
- * environment variable - no default is baked in, so no credentials ever
- * live in source. Stops on Ctrl+C.
+ * Pass the MongoDB URI as the first argument, or set MONGODB_URI in the
+ * environment / a ".env" file in the project root - no default is baked
+ * in, so no credentials ever live in source. Stops on Ctrl+C.
  */
 public class TelemetrySimulator {
 
@@ -35,7 +36,7 @@ public class TelemetrySimulator {
     private static final int MAX_FUEL_PERCENT = 100;
 
     public static void main(String[] args) {
-        String uri = args.length > 0 ? args[0] : System.getenv("MONGODB_URI");
+        String uri = args.length > 0 ? args[0] : EnvLoader.get("MONGODB_URI");
         if (uri == null || uri.isBlank()) {
             System.err.println("Provide a MongoDB URI as the first argument, or set the MONGODB_URI environment variable.");
             System.exit(1);
@@ -100,6 +101,10 @@ public class TelemetrySimulator {
                 idleHours += 1;
             }
 
+            // Every tick represents one simulated day in the rental, active or idle.
+            int operatingDays = doc.get("operatingDays") != null ? doc.getInteger("operatingDays") : 0;
+            operatingDays += 1;
+
             boolean seatbeltEngaged = random.nextInt(0, 20) > 1;
 
             equipment.updateOne(
@@ -110,6 +115,7 @@ public class TelemetrySimulator {
                             Updates.set("activeState", activeThisTick),
                             Updates.set("engineHoursPerDay", engineHours),
                             Updates.set("idleHoursPerDay", idleHours),
+                            Updates.set("operatingDays", operatingDays),
                             Updates.set("seatbeltEngaged", seatbeltEngaged),
                             Updates.push("engineHoursHistory", engineHours),
                             Updates.push("idleHoursHistory", idleHours),

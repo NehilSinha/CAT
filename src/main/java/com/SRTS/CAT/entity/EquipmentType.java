@@ -4,5 +4,9 @@ public enum EquipmentType {
     EXCAVATOR,
     CRANE,
     BULLDOZER,
-    GRADER
+    GRADER,
+    DUMP_TRUCK,
+    WHEEL_LOADER,
+    COMPACTOR,
+    FORKLIFT
 }
